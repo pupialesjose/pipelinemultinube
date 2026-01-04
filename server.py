@@ -1,24 +1,43 @@
-from flask import Flask, render_template_string, request, jsonify
+from flask import Flask, request, render_template, jsonify
+import os
+import requests
+from db import init_db, save_note, get_notes
 
 app = Flask(__name__)
+init_db()
 
-# Lista en memoria para almacenar notas
-notes = []
+AWS_PEER = os.getenv("AWS_OTHER_HOST")
+AZURE_PEER = os.getenv("AZURE_OTHER_HOST")
 
-@app.route('/')
+def replicate(note):
+    for peer in [AWS_PEER, AZURE_PEER]:
+        if peer:
+            try:
+                requests.post(
+                    f"http://{peer}:8080/replica",
+                    json={"content": note},
+                    timeout=2
+                )
+            except:
+                pass  # Si la otra nube cae, no rompemos nada
+
+@app.route("/", methods=["GET", "POST"])
 def index():
-    with open("index.html") as f:
-        return f.read()
+    if request.method == "POST":
+        note = request.form["note"]
+        save_note(note)
+        replicate(note)
+    return render_template("index.html", notes=get_notes())
 
-@app.route('/notes', methods=['GET', 'POST'])
-def manage_notes():
-    if request.method == 'POST':
-        note = request.json.get("note")
-        if note:
-            notes.append(note)
-        return jsonify(notes)
-    else:
-        return jsonify(notes)
+@app.route("/replica", methods=["POST"])
+def replica():
+    data = request.get_json()
+    save_note(data["content"])
+    return jsonify({"status": "replicated"})
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+@app.route("/health")
+def health():
+    return "OK", 200
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080)

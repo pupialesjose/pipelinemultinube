@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Notas Multinube</title>
+</head>
+<body>
+  <h1>Notas Multinube (AWS + Azure)</h1>
+
+  <form method="POST">
+    <input type="text" name="note" required>
+    <button type="submit">Guardar</button>
+  </form>
+
+  <h2>Notas guardadas</h2>
+  <ul>
+    {% for note in notes %}
+      <li>{{ note }}</li>
+    {% endfor %}
+  </ul>
+</body>
+</html>
