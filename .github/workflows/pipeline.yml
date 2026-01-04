@@ -69,7 +69,6 @@ jobs:
       - name: Esperar a que EC2 acepte SSH
         run: sleep 60
 
-      # 🔴 AQUÍ ESTABA EL PROBLEMA – YA CORREGIDO
       - name: Lanzar contenedor en AWS (PUERTO FIJO, 1 SOLO CONTENEDOR)
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -88,10 +87,11 @@ jobs:
             sudo docker stop calculadora || true
             sudo docker rm calculadora || true
 
-            # 🔥 PUERTO FIJO 8080
-            sudo docker run -d --name calculadora -p 8080:8080 ${{ secrets.DOCKERHUB_USERNAME }}/calculadora:latest
+            # 🔥 OBTENER IP PÚBLICA DE AWS Y PASARLA AL CONTENEDOR
+            AWS_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+            sudo docker run -d --name calculadora -p 8080:8080 -e AWS_INSTANCE_IP=$AWS_IP ${{ secrets.DOCKERHUB_USERNAME }}/calculadora:latest
 
-            echo "AWS app disponible en: http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4):8080"
+            echo "AWS app disponible en: http://$AWS_IP:8080"
 
   # 3️⃣ Deploy Azure (NO SE TOCA)
   deploy-azure:
