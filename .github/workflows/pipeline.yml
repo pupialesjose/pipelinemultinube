@@ -64,6 +64,11 @@ jobs:
           #terraform refresh -lock=false -input=false
           echo "aws_instance_ip=$(terraform output -raw instance_public_ip)" >> $GITHUB_OUTPUT
         working-directory: terraform/aws
+        
+      - name: Mostrar IP antes de SSH
+        run: |
+          echo "La IP de AWS es: ${{ steps.tf_output_aws.outputs.aws_instance_ip }}"
+
 
       - name: Esperar a que EC2 acepte SSH
         run: sleep 60
