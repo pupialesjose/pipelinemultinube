@@ -61,7 +61,7 @@ jobs:
       - name: Obtener IP pública de AWS EC2
         id: tf_output_aws
         run: |
-          terraform refresh -lock=false -input=false
+          #terraform refresh -lock=false -input=false
           echo "aws_instance_ip=$(terraform output -raw instance_public_ip)" >> $GITHUB_OUTPUT
         working-directory: terraform/aws
 
