@@ -87,13 +87,27 @@ jobs:
               sudo systemctl start docker
             fi
 
-            PORT=$((RANDOM % 55535 + 10000))
-            for cid in $(sudo docker ps -aq --filter "name=calculadora"); do
-              sudo docker stop $cid || true
-              sudo docker rm $cid || true
-            done
+            #PORT=$((RANDOM % 55535 + 10000))
+            #for cid in $(sudo docker ps -aq --filter "name=calculadora"); do
+              #sudo docker stop $cid || true
+              #sudo docker rm $cid || true
+            #done
 
-            sudo docker run -d -p $PORT:8080 --name calculadora ${{ secrets.DOCKERHUB_USERNAME }}/calculadora:latest
+            #sudo docker run -d -p $PORT:8080 --name calculadora ${{ secrets.DOCKERHUB_USERNAME }}/calculadora:latest
+
+
+            # Limpiar contenedor previo (idempotente)
+            sudo docker stop calculadora || true
+            sudo docker rm calculadora || true
+
+            # (Opcional) limpiar contenedores huérfanos
+            sudo docker container prune -f
+
+            # Lanzar contenedor ÚNICO con IP dinámica de Azure
+            sudo docker run -d --name calculadora -p 8080:8080 -e AZURE_OTHER_HOST=${AZURE_IP} ${{ secrets.DOCKERHUB_USERNAME }}/calculadora:latest
+
+
+            
             echo "AWS app disponible en: http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4):$PORT"
 
   # 3️⃣ Deploy Azure
