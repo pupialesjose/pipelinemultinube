@@ -1,56 +1,17 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Calculadora básica</title>
+    <meta charset="UTF-8">
+    <title>Notepad App</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h2>Calculadora básica</h2>
+    <h1>Notepad App 📝</h1>
+    <textarea id="noteInput" placeholder="Escribe tu nota aquí..."></textarea>
+    <button onclick="addNote()">Guardar Nota</button>
+    <h2>Notas Guardadas</h2>
+    <ul id="notesList"></ul>
 
-  <input id="a" type="number" placeholder="Número 1">
-  <input id="b" type="number" placeholder="Número 2">
-
-  <br><br>
-
-  <button onclick="operar('+')">Sumar</button>
-  <button onclick="operar('-')">Restar</button>
-  <button onclick="operar('*')">Multiplicar</button>
-  <button onclick="operar('/')">Dividir</button>
-
-  <h3 id="resultado"></h3>
-
-  <script>
-    function operar(op) {
-      const a = Number(document.getElementById("a").value);
-      const b = Number(document.getElementById("b").value);
-      let res;
-
-      if (isNaN(a) || isNaN(b)) {
-        document.getElementById("resultado").innerText = "Ingrese ambos números";
-        return;
-      }
-
-      switch (op) {
-        case '+':
-          res = a + b;
-          break;
-        case '-':
-          res = a - b;
-          break;
-        case '*':
-          res = a * b;
-          break;
-        case '/':
-          if (b === 0) {
-            document.getElementById("resultado").innerText = "No se puede dividir entre 0";
-            return;
-          }
-          res = a / b;
-          break;
-      }
-
-      document.getElementById("resultado").innerText = "Resultado: " + res;
-    }
-  </script>
+    <script src="script.js"></script>
 </body>
 </html>
