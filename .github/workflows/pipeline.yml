@@ -130,7 +130,8 @@ jobs:
         working-directory: terraform/azure
 
       - name: Mostrar IP antes de SSH
-        run: echo "La IP de Azure es: ${{ steps.tf_output_azure.outputs.azure_vm_ip }}"
+        run: |
+          echo "La IP de Azure es: ${{ steps.tf_output_azure.outputs.azure_vm_ip }}"
 
       - name: Esperar a que Azure VM acepte SSH
         run: sleep 60
