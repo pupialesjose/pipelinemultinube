@@ -33,7 +33,7 @@ jobs:
   deploy-aws:
     runs-on: ubuntu-latest
     outputs:
-      aws_ip_file: ${{ steps.save_aws_ip.outputs.aws_ip_file }}
+      aws_ip: ${{ steps.get_aws_ip.outputs.aws_ip }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,24 +53,26 @@ jobs:
       - name: Terraform init & apply AWS
         run: |
           terraform init
-          terraform apply -auto-approve -var="aws_region=us-east-2" -var="ami_id=${{ secrets.AMI_ID }}" -var="key_name=${{ secrets.KEY_NAME }}" -var="docker_image=${{ secrets.DOCKERHUB_USERNAME }}/calculadora:latest"
+          terraform apply -auto-approve \
+            -var="aws_region=us-east-2" \
+            -var="ami_id=${{ secrets.AMI_ID }}" \
+            -var="key_name=${{ secrets.KEY_NAME }}" \
+            -var="docker_image=${{ secrets.DOCKERHUB_USERNAME }}/calculadora:latest"
         working-directory: terraform/aws
 
-      - name: Obtener IP pública de AWS EC2 y guardarla en archivo temporal
-        id: save_aws_ip
+      - name: Obtener IP pública de AWS EC2
+        id: get_aws_ip
         run: |
-          AWS_IP=$(terraform output -raw instance_public_ip)
-          echo $AWS_IP > aws_ip.txt
-          echo "aws_ip_file=aws_ip.txt" >> $GITHUB_OUTPUT
+          echo "aws_ip=$(terraform output -raw instance_public_ip)" >> $GITHUB_OUTPUT
         working-directory: terraform/aws
 
       - name: Esperar a que EC2 acepte SSH
         run: sleep 60
 
-      - name: Lanzar contenedor en AWS (PUERTO FIJO)
+      - name: Lanzar contenedor en AWS
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ steps.save_aws_ip.outputs.aws_ip_file }}
+          host: ${{ steps.get_aws_ip.outputs.aws_ip }}
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
           script: |
@@ -84,17 +86,18 @@ jobs:
             sudo docker stop calculadora || true
             sudo docker rm calculadora || true
 
-            AWS_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
-            sudo docker run -d --name calculadora -p 8080:8080 -e AWS_INSTANCE_IP=$AWS_IP ${{ secrets.DOCKERHUB_USERNAME }}/calculadora:latest
+            sudo docker run -d --name calculadora -p 8080:8080 \
+              -e AWS_INSTANCE_IP=${{ steps.get_aws_ip.outputs.aws_ip }} \
+              ${{ secrets.DOCKERHUB_USERNAME }}/calculadora:latest
 
-            echo "AWS app disponible en: http://$AWS_IP:8080"
+            echo "AWS app disponible en: http://${{ steps.get_aws_ip.outputs.aws_ip }}:8080"
 
   # 3️⃣ Deploy Azure
   deploy-azure:
     runs-on: ubuntu-latest
     needs: deploy-aws
     outputs:
-      azure_ip: ${{ steps.tf_output_azure.outputs.azure_vm_ip }}
+      azure_ip: ${{ steps.get_azure_ip.outputs.azure_vm_ip }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -116,7 +119,7 @@ jobs:
         working-directory: terraform/azure
 
       - name: Obtener IP pública de Azure VM
-        id: tf_output_azure
+        id: get_azure_ip
         run: |
           terraform refresh -lock=false -input=false
           echo "azure_vm_ip=$(terraform output -raw vm_public_ip)" >> $GITHUB_OUTPUT
@@ -128,7 +131,7 @@ jobs:
       - name: Lanzar contenedor en Azure con IP de AWS
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ steps.tf_output_azure.outputs.azure_vm_ip }}
+          host: ${{ steps.get_azure_ip.outputs.azure_vm_ip }}
           username: azureuser
           key: ${{ secrets.AZURE_SSH_PRIVATE_KEY }}
           script: |
@@ -139,33 +142,31 @@ jobs:
               sudo systemctl start docker
             fi
 
-            AWS_IP=$(cat ../terraform/aws/aws_ip.txt)
             sudo docker stop calculadora || true
             sudo docker rm calculadora || true
 
-            sudo docker run -d -p 8080:8080 -e AWS_OTHER_HOST=$AWS_IP --name calculadora ${{ secrets.DOCKERHUB_USERNAME }}/calculadora:latest
+            sudo docker run -d -p 8080:8080 \
+              -e AWS_OTHER_HOST=${{ needs.deploy-aws.outputs.aws_ip }} \
+              --name calculadora ${{ secrets.DOCKERHUB_USERNAME }}/calculadora:latest
 
   # 4️⃣ Actualizar contenedor AWS con IP de Azure
   update-aws-with-azure-ip:
     runs-on: ubuntu-latest
-    needs: deploy-azure
+    needs: [deploy-aws, deploy-azure]
     steps:
       - name: SSH a AWS para pasarle IP de Azure
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ needs.deploy-azure.outputs.azure_ip }}
+          host: ${{ needs.deploy-aws.outputs.aws_ip }}
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
           script: |
             sudo docker stop calculadora || true
             sudo docker rm calculadora || true
 
-            AWS_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
-            AZURE_IP=${{ needs.deploy-azure.outputs.azure_ip }}
-
             sudo docker run -d --name calculadora -p 8080:8080 \
-              -e AWS_INSTANCE_IP=$AWS_IP \
-              -e AZURE_HOST=$AZURE_IP \
+              -e AWS_INSTANCE_IP=${{ needs.deploy-aws.outputs.aws_ip }} \
+              -e AZURE_HOST=${{ needs.deploy-azure.outputs.azure_ip }} \
               ${{ secrets.DOCKERHUB_USERNAME }}/calculadora:latest
 
-            echo "AWS actualizado con IP de Azure ($AZURE_IP)"
+            echo "AWS actualizado con IP de Azure (${{ needs.deploy-azure.outputs.azure_ip }})"
