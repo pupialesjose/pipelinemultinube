@@ -73,7 +73,7 @@ jobs:
       - name: Esperar a que EC2 acepte SSH
         run: sleep 60
 
-      - name: Lanzar contenedor en AWS
+      - name: Lanzar contenedor principal en AWS
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ steps.tf_output_aws.outputs.aws_instance_ip }}
@@ -87,22 +87,14 @@ jobs:
               sudo systemctl start docker
             fi
 
-            # Contenedor inicial (aleatorio) para evitar puerto ocupado
-            PORT=$((RANDOM % 55535 + 10000))
-            for cid in $(sudo docker ps -aq --filter "name=calculadora"); do
+            # Limpiar contenedores extra pero no el principal
+            for cid in $(sudo docker ps -aq --filter "name=calculadora_extra"); do
               sudo docker stop $cid || true
               sudo docker rm $cid || true
             done
 
-            # Lanzar contenedor “extra” con puerto aleatorio
-            sudo docker run -d -p $PORT:8080 --name calculadora_extra ${{ secrets.DOCKERHUB_USERNAME }}/calculadora:latest
-
-            # Contenedor final que debe exponer 8080
-            sudo docker stop calculadora_extra || true
-            sudo docker rm calculadora_extra || true
-            sudo docker run -d -p 8080:8080 --name calculadora \
-              -e AZURE_OTHER_HOST=pendiente \
-              ${{ secrets.DOCKERHUB_USERNAME }}/calculadora:latest
+            # Lanzar contenedor principal con puerto 8080
+            sudo docker run -d -p 8080:8080 --name calculadora ${{ secrets.DOCKERHUB_USERNAME }}/calculadora:latest
 
             echo "AWS app disponible en: http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4):8080"
 
@@ -160,11 +152,13 @@ jobs:
               sudo systemctl start docker
             fi
 
-            for cid in $(sudo docker ps -aq --filter "name=calculadora"); do
+            # Limpiar contenedor extra
+            for cid in $(sudo docker ps -aq --filter "name=calculadora_extra"); do
               sudo docker stop $cid || true
               sudo docker rm $cid || true
             done
 
+            # Lanzar contenedor principal en Azure con puerto 8080
             sudo docker run -d -p 8080:8080 \
               -e AWS_OTHER_HOST=${{ needs.deploy-aws.outputs.aws_ip }} \
               --name calculadora ${{ secrets.DOCKERHUB_USERNAME }}/calculadora:latest
@@ -176,10 +170,15 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
           script: |
-            for cid in $(sudo docker ps -aq --filter "name=calculadora"); do
+            # Detener contenedor extra en AWS
+            for cid in $(sudo docker ps -aq --filter "name=calculadora_extra"); do
               sudo docker stop $cid || true
               sudo docker rm $cid || true
             done
+
+            # Reiniciar contenedor principal con variable AZURE_OTHER_HOST
+            sudo docker stop calculadora || true
+            sudo docker rm calculadora || true
 
             sudo docker run -d -p 8080:8080 \
               -e AZURE_OTHER_HOST=${{ steps.tf_output_azure.outputs.azure_vm_ip }} \
