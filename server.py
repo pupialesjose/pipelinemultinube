@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, render_template, jsonify, redirect, url_for
 import os
 import requests
 from db import init_db, save_note, get_notes
@@ -19,7 +19,7 @@ def replicate(note):
                     timeout=2
                 )
             except:
-                pass  # Si la otra nube cae, no rompemos nada
+                pass
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -27,6 +27,7 @@ def index():
         note = request.form["note"]
         save_note(note)
         replicate(note)
+        return redirect(url_for("index"))  # 👈 clave
     return render_template("index.html", notes=get_notes())
 
 @app.route("/replica", methods=["POST"])
