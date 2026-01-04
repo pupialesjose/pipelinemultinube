@@ -34,7 +34,6 @@ jobs:
 
   # 2️⃣ Deploy AWS
   deploy-aws:
-    id: deploy-aws
     runs-on: ubuntu-latest
     needs: build
     outputs:
@@ -70,7 +69,7 @@ jobs:
       - name: Esperar a que EC2 acepte SSH
         run: sleep 60
 
-      - name: Lanzar contenedor en AWS (PUERTO FIJO, 1 SOLO CONTENEDOR, nombre fijo)
+      - name: Lanzar contenedor en AWS (PUERTO FIJO, 1 SOLO CONTENEDOR)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ steps.tf_output_aws.outputs.aws_instance_ip }}
@@ -92,9 +91,8 @@ jobs:
 
             echo "AWS app disponible en: http://$AWS_IP:8080"
 
-  # 3️⃣ Deploy Azure (NO SE TOCA)
+  # 3️⃣ Deploy Azure
   deploy-azure:
-    id: deploy-azure
     runs-on: ubuntu-latest
     needs: deploy-aws
     outputs:
@@ -166,9 +164,6 @@ jobs:
             AWS_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
             AZURE_IP=${{ needs.deploy-azure.outputs.azure_ip }}
 
-            sudo docker run -d --name calculadora -p 8080:8080 \
-              -e AWS_INSTANCE_IP=$AWS_IP \
-              -e AZURE_HOST=$AZURE_IP \
-              ${{ secrets.DOCKERHUB_USERNAME }}/calculadora:latest
+            sudo docker run -d --name calculadora -p 8080:8080 -e AWS_INSTANCE_IP=$AWS_IP -e AZURE_HOST=$AZURE_IP ${{ secrets.DOCKERHUB_USERNAME }}/calculadora:latest
 
             echo "AWS actualizado con IP de Azure ($AZURE_IP)"
