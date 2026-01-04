@@ -15,9 +15,13 @@ def init_db():
     conn.close()
 
 def save_note(content):
+    print("GUARDANDO EN ESTA BASE:", content)
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("INSERT INTO notes (content) VALUES (?)", (content,))
+    c.execute(
+        "INSERT INTO notes (content) VALUES (?)",
+        (content,)
+    )
     conn.commit()
     conn.close()
 

@@ -9,6 +9,13 @@ init_db()
 AWS_PEER = os.getenv("AWS_OTHER_HOST")
 AZURE_PEER = os.getenv("AZURE_OTHER_HOST")
 
+def get_current_cloud():
+    if AZURE_PEER:
+        return "AWS"
+    if AWS_PEER:
+        return "Azure"
+    return "Desconocida"
+
 def replicate(note):
     for peer in [AWS_PEER, AZURE_PEER]:
         if peer:
@@ -18,8 +25,8 @@ def replicate(note):
                     json={"content": note},
                     timeout=2
                 )
-            except:
-                pass
+            except Exception as e:
+                print("Error replicando:", e)
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -27,8 +34,13 @@ def index():
         note = request.form["note"]
         save_note(note)
         replicate(note)
-        return redirect(url_for("index"))  # 👈 clave
-    return render_template("index.html", notes=get_notes())
+        return redirect(url_for("index"))
+
+    return render_template(
+        "index.html",
+        notes=get_notes(),
+        cloud=get_current_cloud()
+    )
 
 @app.route("/replica", methods=["POST"])
 def replica():
