@@ -61,7 +61,8 @@ jobs:
       - name: Obtener IP pública de AWS EC2
         id: tf_output_aws
         run: |
-          echo "AWS_INSTANCE_IP=$(terraform output -raw instance_public_ip)" >> $GITHUB_OUTPUT
+          terraform refresh -lock=false -input=false
+          echo "aws_instance_ip=$(terraform output -raw instance_public_ip)" >> $GITHUB_OUTPUT
         working-directory: terraform/aws
 
       - name: Esperar a que EC2 acepte SSH
@@ -70,7 +71,7 @@ jobs:
       - name: Update app on AWS EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ steps.tf_output_aws.outputs.AWS_INSTANCE_IP }}
+          host: ${{ steps.tf_output_aws.outputs.aws_instance_ip }}
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
           script: |
