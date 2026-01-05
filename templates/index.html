@@ -1,48 +1,42 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Notas Multinube</title>
-  <!-- Bootstrap 5 CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body { padding: 20px; background-color: #f8f9fa; }
-    .note-form input { max-width: 400px; display: inline-block; }
-    .note-list li { margin-bottom: 10px; }
-    .cloud-badge { font-size: 1.1rem; }
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    input[type="text"] { width: 300px; padding: 5px; }
+    button { margin-left: 5px; }
+    li { margin-bottom: 5px; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1 class="mb-4">Notas Multinube <span class="badge bg-primary cloud-badge">{{ cloud }}</span></h1>
+  <h1>Notas Multinube (AWS + Azure)</h1>
 
-    <div class="card mb-4">
-      <div class="card-body">
-        <form method="POST" class="note-form d-flex">
-          <input type="text" name="note" class="form-control me-2" placeholder="Escribe una nota..." required>
-          <button type="submit" class="btn btn-success">Guardar</button>
+  <p>
+    Conectado a la nube:
+    <strong>{{ cloud }}</strong>
+  </p>
+
+  <h2>Agregar nota</h2>
+  <form method="POST">
+    <input type="text" name="note" required>
+    <button type="submit">Guardar</button>
+  </form>
+
+  <h2>Notas guardadas en ESTA nube</h2>
+  <ul>
+    {% for note in notes %}
+      <li>
+        <form method="POST" action="{{ url_for('update', note_id=note.id) }}" style="display:inline;">
+          <input type="text" name="note" value="{{ note.content }}">
+          <button type="submit">Actualizar</button>
         </form>
-      </div>
-    </div>
 
-    <h3>Notas guardadas en esta nube</h3>
-    <ul class="list-group note-list">
-      {% for note in notes %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <form method="POST" action="{{ url_for('update', note_id=note.id) }}" class="d-flex flex-grow-1 me-2">
-            <input type="text" name="note" class="form-control me-2" value="{{ note.content }}">
-            <button type="submit" class="btn btn-primary btn-sm">Actualizar</button>
-          </form>
-          <form method="POST" action="{{ url_for('delete', note_id=note.id) }}">
-            <button type="submit" class="btn btn-danger btn-sm">Borrar</button>
-          </form>
-        </li>
-      {% endfor %}
-    </ul>
-  </div>
-
-  <!-- Bootstrap JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <form method="POST" action="{{ url_for('delete', note_id=note.id) }}" style="display:inline;">
+          <button type="submit">Borrar</button>
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
 </body>
 </html>
