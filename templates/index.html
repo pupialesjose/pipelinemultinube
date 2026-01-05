@@ -2,6 +2,12 @@
 <html>
 <head>
   <title>Notas Multinube</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    input[type="text"] { width: 300px; padding: 5px; }
+    button { margin-left: 5px; }
+    li { margin-bottom: 5px; }
+  </style>
 </head>
 <body>
   <h1>Notas Multinube (AWS + Azure)</h1>
@@ -11,6 +17,7 @@
     <strong>{{ cloud }}</strong>
   </p>
 
+  <h2>Agregar nota</h2>
   <form method="POST">
     <input type="text" name="note" required>
     <button type="submit">Guardar</button>
@@ -19,7 +26,16 @@
   <h2>Notas guardadas en ESTA nube</h2>
   <ul>
     {% for note in notes %}
-      <li>{{ note }}</li>
+      <li>
+        <form method="POST" action="{{ url_for('update', note_id=note.id) }}" style="display:inline;">
+          <input type="text" name="note" value="{{ note.content }}">
+          <button type="submit">Actualizar</button>
+        </form>
+
+        <form method="POST" action="{{ url_for('delete', note_id=note.id) }}" style="display:inline;">
+          <button type="submit">Borrar</button>
+        </form>
+      </li>
     {% endfor %}
   </ul>
 </body>

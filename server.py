@@ -1,7 +1,8 @@
+
 from flask import Flask, request, render_template, jsonify, redirect, url_for
 import os
 import requests
-from db import init_db, save_note, get_notes
+from db import init_db, save_note, get_notes, update_note, delete_note
 
 app = Flask(__name__)
 init_db()
@@ -47,6 +48,18 @@ def replica():
     data = request.get_json()
     save_note(data["content"])
     return jsonify({"status": "replicated"})
+
+@app.route("/update/<int:note_id>", methods=["POST"])
+def update(note_id):
+    content = request.form["note"]
+    update_note(note_id, content)
+    replicate(content)
+    return redirect(url_for("index"))
+
+@app.route("/delete/<int:note_id>", methods=["POST"])
+def delete(note_id):
+    delete_note(note_id)
+    return redirect(url_for("index"))
 
 @app.route("/health")
 def health():
