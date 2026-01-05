@@ -21,7 +21,7 @@ def replicate(note):
         if peer:
             try:
                 requests.post(
-                    f"http://{peer}:8080/replica",
+                    f"http://{peer}:49154/replica",
                     json={"content": note},
                     timeout=2
                 )
