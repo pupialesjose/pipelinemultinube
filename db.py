@@ -8,38 +8,22 @@ def init_db():
     c.execute("""
         CREATE TABLE IF NOT EXISTS notes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            first_name TEXT NOT NULL,
+            last_name TEXT NOT NULL,
+            age INTEGER NOT NULL,
+            cedula TEXT NOT NULL,
             content TEXT NOT NULL
         )
     """)
     conn.commit()
     conn.close()
 
-def save_note(content):
+def save_note(first_name, last_name, age, cedula, content):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute(
-        "INSERT INTO notes (content) VALUES (?)",
-        (content,)
-    )
-    conn.commit()
-    conn.close()
-
-def update_note(note_id, content):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute(
-        "UPDATE notes SET content = ? WHERE id = ?",
-        (content, note_id)
-    )
-    conn.commit()
-    conn.close()
-
-def delete_note(note_id):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute(
-        "DELETE FROM notes WHERE id = ?",
-        (note_id,)
+        "INSERT INTO notes (first_name, last_name, age, cedula, content) VALUES (?, ?, ?, ?, ?)",
+        (first_name, last_name, age, cedula, content)
     )
     conn.commit()
     conn.close()
@@ -47,7 +31,7 @@ def delete_note(note_id):
 def get_notes():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT id, content FROM notes ORDER BY id DESC")
-    notes = [{"id": row[0], "content": row[1]} for row in c.fetchall()]
+    c.execute("SELECT first_name, last_name, age, cedula, content FROM notes ORDER BY id DESC")
+    notes = c.fetchall()  # lista de tuplas
     conn.close()
     return notes

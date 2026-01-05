@@ -1,8 +1,7 @@
-
 from flask import Flask, request, render_template, jsonify, redirect, url_for
 import os
 import requests
-from db import init_db, save_note, get_notes, update_note, delete_note
+from db import init_db, save_note, get_notes
 
 app = Flask(__name__)
 init_db()
@@ -17,13 +16,13 @@ def get_current_cloud():
         return "Azure"
     return "Desconocida"
 
-def replicate(note):
+def replicate(data):
     for peer in [AWS_PEER, AZURE_PEER]:
         if peer:
             try:
                 requests.post(
                     f"http://{peer}:49154/replica",
-                    json={"content": note},
+                    json=data,
                     timeout=2
                 )
             except Exception as e:
@@ -32,9 +31,20 @@ def replicate(note):
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
+        first_name = request.form["first_name"]
+        last_name = request.form["last_name"]
+        age = int(request.form["age"])
+        cedula = request.form["cedula"]
         note = request.form["note"]
-        save_note(note)
-        replicate(note)
+
+        save_note(first_name, last_name, age, cedula, note)
+        replicate({
+            "first_name": first_name,
+            "last_name": last_name,
+            "age": age,
+            "cedula": cedula,
+            "content": note
+        })
         return redirect(url_for("index"))
 
     return render_template(
@@ -46,20 +56,8 @@ def index():
 @app.route("/replica", methods=["POST"])
 def replica():
     data = request.get_json()
-    save_note(data["content"])
+    save_note(data["first_name"], data["last_name"], data["age"], data["cedula"], data["content"])
     return jsonify({"status": "replicated"})
-
-@app.route("/update/<int:note_id>", methods=["POST"])
-def update(note_id):
-    content = request.form["note"]
-    update_note(note_id, content)
-    replicate(content)
-    return redirect(url_for("index"))
-
-@app.route("/delete/<int:note_id>", methods=["POST"])
-def delete(note_id):
-    delete_note(note_id)
-    return redirect(url_for("index"))
 
 @app.route("/health")
 def health():
