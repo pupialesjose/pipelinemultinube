@@ -44,7 +44,7 @@ resource "azurerm_network_security_group" "nsg" {
 
 # Nueva regla para la aplicación en el puerto 49154
   security_rule {
-    name                       = "APP_HTTP"
+    name                       = "APP_HTTPP"
     priority                   = 1003
     direction                  = "Inbound"
     access                     = "Allow"
