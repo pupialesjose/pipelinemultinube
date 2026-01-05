@@ -170,7 +170,8 @@ jobs:
               sudo docker rm $cid || true
             done
 
-            sudo docker run -d -p 8080:8080 \
+            #sudo docker run -d -p 8080:8080
+            sudo docker run -d -p 49154:8080 \
               -e AWS_OTHER_HOST=${{ needs.deploy-aws.outputs.aws_ip }} \
               --name calculadora ${{ secrets.DOCKERHUB_USERNAME }}/calculadora:latest
 
