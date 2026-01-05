@@ -2,73 +2,71 @@ import sqlite3
 
 DB_PATH = "notes.db"
 
-def get_conn():
-    return sqlite3.connect(DB_PATH, check_same_thread=False)
-
 def init_db():
-    conn = get_conn()
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("""
-        CREATE TABLE IF NOT EXISTS notes (
+        CREATE TABLE IF NOT EXISTS people (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            first_name TEXT,
-            last_name TEXT,
-            age INTEGER,
-            cedula TEXT,
-            content TEXT
+            nombre TEXT NOT NULL,
+            apellido TEXT NOT NULL,
+            edad INTEGER NOT NULL,
+            cedula TEXT NOT NULL,
+            nota TEXT
         )
     """)
     conn.commit()
     conn.close()
 
-def create_note(data):
-    conn = get_conn()
+def create_person(data):
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("""
-        INSERT INTO notes (first_name, last_name, age, cedula, content)
+        INSERT INTO people (nombre, apellido, edad, cedula, nota)
         VALUES (?, ?, ?, ?, ?)
     """, (
-        data["first_name"],
-        data["last_name"],
-        data["age"],
+        data["nombre"],
+        data["apellido"],
+        data["edad"],
         data["cedula"],
-        data["content"]
+        data.get("nota", "")
     ))
     conn.commit()
-    note_id = c.lastrowid
     conn.close()
-    return note_id
 
-def get_notes():
-    conn = get_conn()
-    c = conn.cursor()
-    c.execute("SELECT * FROM notes ORDER BY id DESC")
-    notes = c.fetchall()
-    conn.close()
-    return notes
-
-def update_note(note_id, data):
-    conn = get_conn()
+def get_people():
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("""
-        UPDATE notes
-        SET first_name=?, last_name=?, age=?, cedula=?, content=?
+        SELECT id, nombre, apellido, edad, cedula, nota
+        FROM people
+        ORDER BY id DESC
+    """)
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+def update_person(pid, data):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("""
+        UPDATE people
+        SET nombre=?, apellido=?, edad=?, cedula=?, nota=?
         WHERE id=?
     """, (
-        data["first_name"],
-        data["last_name"],
-        data["age"],
+        data["nombre"],
+        data["apellido"],
+        data["edad"],
         data["cedula"],
-        data["content"],
-        note_id
+        data.get("nota", ""),
+        pid
     ))
     conn.commit()
     conn.close()
 
-def delete_note(note_id):
-    conn = get_conn()
+def delete_person(pid):
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("DELETE FROM notes WHERE id=?", (note_id,))
+    c.execute("DELETE FROM people WHERE id=?", (pid,))
     conn.commit()
     conn.close()
-
