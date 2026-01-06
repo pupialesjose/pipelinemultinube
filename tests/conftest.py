@@ -1,16 +1,22 @@
 import os
+import sys
 import tempfile
 import pytest
-import db
+
+# 🔑 AÑADIR RAÍZ DEL PROYECTO AL PYTHONPATH
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, ROOT_DIR)
+
+import db  # ahora sí funciona
 
 @pytest.fixture(autouse=True)
 def test_db(monkeypatch):
     db_fd, db_path = tempfile.mkstemp()
 
-    # Forzar uso de DB temporal
+    # Forzar DB temporal
     monkeypatch.setattr(db, "DB_PATH", db_path)
 
-    # 🔑 Crear tablas DESPUÉS de cambiar el DB_PATH
+    # Crear tablas en la DB temporal
     db.init_db()
 
     yield
